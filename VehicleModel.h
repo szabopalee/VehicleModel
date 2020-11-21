@@ -13,6 +13,11 @@ typedef enum
 }vehicleGear_t;
 
 // typedef enum kocsi unknown camry
+typedef enum
+{
+	VehicleType_Unknown = 0x00u,
+	VehicleType_Camry = 0x001u
+}vehicleType_t;
 
 typedef struct
 {
@@ -22,8 +27,7 @@ typedef struct
 	float maxSteeringWheelAngle;
 	float maxSpeed;
 	float wheelbase;
-	
-	// ide, hogy milyen auto? kulonbozo mukodesekhez...
+	vehicleType_t vehicleType;
 
 	float accPedalPos;
 	float brakePedalPos;
@@ -40,14 +44,14 @@ typedef struct
 
 
 void vehicleModel_update(vehicleModel_t *VehicleModel);
-void vehicleModel_init(vehicleModel_t *VehicleModel, float acc_pedal_ratio, float brake_pedal_ratio, float steering_ratio, float max_swangle, float max_speed, float wheelbase);
+void vehicleModel_init(vehicleModel_t *VehicleModel, float acc_pedal_ratio, float brake_pedal_ratio, float steering_ratio, float max_swangle, float max_speed, float wheelbase, vehicleType_t vehicle_type);
 void vehicleModel_printState(vehicleModel_t VehicleModel);
 // ezek visszajelezzenek valahogy visszatérési értékben, hogy valami hiba volt?
-// fn_return_t-vel
+// fnReturn_t
 
-void vehicleModel_setAccPedalPos(vehicleModel_t *VehicleModel, float acc_pedal_pos);
-void vehicleModel_setBrakePedalPos(vehicleModel_t *VehicleModel, float brake_pedal_pos);
-void vehicleModel_setSteeringWheelAngle(vehicleModel_t *VehicleModel, float sw_angle);
-void vehicleModel_setGear(vehicleModel_t *VehicleModel, vehicleGear_t gear);
+fnReturn_t vehicleModel_setAccPedalPos(vehicleModel_t *VehicleModel, float acc_pedal_pos);
+fnReturn_t vehicleModel_setBrakePedalPos(vehicleModel_t *VehicleModel, float brake_pedal_pos);
+fnReturn_t vehicleModel_setSteeringWheelAngle(vehicleModel_t *VehicleModel, float sw_angle);
+fnReturn_t vehicleModel_setGear(vehicleModel_t *VehicleModel, vehicleGear_t gear);
 
 #endif

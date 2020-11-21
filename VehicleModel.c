@@ -7,41 +7,46 @@ float timeduration = 50e-3;
 
 static void update_longAcc(vehicleModel_t *VehicleModel)
 {
-	if (VehicleModel->gear == VehicleGear_Park)
+	float acceleration, deceleration;
+	acceleration = (VehicleModel->accPedalPos) * (VehicleModel->accPedalAccelerationRatio);
+	deceleration = (VehicleModel->brakePedalPos) * (VehicleModel->brakePedalDecelerationRatio);
+	
+	if( VehicleModel->gear == VehicleGear_INVALID || VehicleModel->gear == VehicleGear_Neutral || VehicleModel->gear == VehicleGear_Park )
 	{
-		VehicleModel->longAcc = 0;
+		acceleration = 0;
 	}
-	else if (VehicleModel->gear == VehicleGear_Reverse)
+	else if ( VehicleModel->gear == VehicleGear_Reverse )
 	{
-		VehicleModel->longAcc = -(VehicleModel->accPedalPos * VehicleModel->accPedalAccelerationRatio) + (VehicleModel->brakePedalPos * VehicleModel->brakePedalDecelerationRatio);
-		if (VehicleModel->longAcc > 0)
+		acceleration = -acceleration; // itt esetleg nem ugyanannyira gyorsít hátrafele mint elõre?
+	}
+	
+	
+	if( VehicleModel->velocity >= 0)
+	{
+		if(deceleration * timeduration > VehicleModel->velocity)
 		{
-			VehicleModel->longAcc = 0;
+			deceleration = -(VehicleModel->velocity)/timeduration);
 		}
 	}
-	else if(VehicleModel->gear == VehicleGear_Drive || VehicleModel->gear == VehicleGear_EngineBrake || VehicleModel->gear == VehicleGear_Sport)
+	else
 	{
-		VehicleModel->longAcc = (VehicleModel->accPedalPos * VehicleModel->accPedalAccelerationRatio) - (VehicleModel->brakePedalPos * VehicleModel->brakePedalDecelerationRatio);
+		if( deceleration * timeduration > -(VehicleModel->velocity) )
+		{
+			deceleration = -(VehicleModel->velocity)/timeduration);
+		}
 	}
-	else if (VehicleModel->gear == VehicleGear_INVALID || VehicleModel->gear ==  VehicleGear_Neutral)
-	{
-		VehicleModel->longAcc = - (VehicleModel->brakePedalPos * VehicleModel->brakePedalDecelerationRatio);
-	}
+	VehicleModel->longAcc = acceleration + deceleration;
 }
 
 static void update_velocity(vehicleModel_t *VehicleModel)
 {
-	if (VehicleModel->velocity + timeduration * VehicleModel->longAcc > VehicleModel->maxSpeed)
+	if (VehicleModel->velocity + timeduration * (VehicleModel->longAcc) > VehicleModel->maxSpeed) // itt legyen negativ max speed is?
 	{
 		VehicleModel->velocity = VehicleModel->maxSpeed;
 	}
-	else if (VehicleModel->velocity + timeduration * VehicleModel->longAcc < 0 && VehicleModel->gear != VehicleGear_Reverse)
-	{
-		VehicleModel->velocity = 0;
-	}
 	else
 	{
-		VehicleModel->velocity += timeduration * VehicleModel->longAcc;
+		VehicleModel->velocity += timeduration * (VehicleModel->longAcc);
 	}
 }
 
@@ -82,7 +87,7 @@ void vehicleModel_update(vehicleModel_t *VehicleModel)
 	update_yawrate(VehicleModel);
 }
 
-void vehicleModel_init(vehicleModel_t *VehicleModel, float acc_pedal_ratio, float brake_pedal_ratio, float steering_ratio, float max_swangle, float max_speed, float wheelbase)
+void vehicleModel_init(vehicleModel_t *VehicleModel, float acc_pedal_ratio, float brake_pedal_ratio, float steering_ratio, float max_swangle, float max_speed, float wheelbase, vehicleType_t vehicle_type)
 {
 	VehicleModel->accPedalPos = 0.0;
 	VehicleModel->brakePedalPos = 0.0;
@@ -101,6 +106,7 @@ void vehicleModel_init(vehicleModel_t *VehicleModel, float acc_pedal_ratio, floa
 	VehicleModel->maxSteeringWheelAngle = max_swangle;
 	VehicleModel->maxSpeed = max_speed;
 	VehicleModel->wheelbase = wheelbase;
+	VehicleModel->vehicleType = vehicle_type;
 }
 
 void vehicleModel_printState(vehicleModel_t VehicleModel)
@@ -116,45 +122,51 @@ void vehicleModel_printState(vehicleModel_t VehicleModel)
 	printf("YawRate: %f rad/s\n", VehicleModel.yawrate);
 }
 
-void vehicleModel_setAccPedalPos(vehicleModel_t *VehicleModel, float acc_pedal_pos)
+fnReturn_t vehicleModel_setAccPedalPos(vehicleModel_t *VehicleModel, float acc_pedal_pos)
 {
 	if (acc_pedal_pos <= 1 && acc_pedal_pos >= 0)
 	{
 		VehicleModel->accPedalPos = acc_pedal_pos;
+		return FnReturn_Ok;
 	}
+	return FnReturn_InvalidArgument;
 }
 
-void vehicleModel_setBrakePedalPos(vehicleModel_t *VehicleModel, float brake_pedal_pos)
+fnReturn_t vehicleModel_setBrakePedalPos(vehicleModel_t *VehicleModel, float brake_pedal_pos)
 {
 	if (brake_pedal_pos <= 1 && brake_pedal_pos >= 0)
 	{
 		VehicleModel->brakePedalPos = brake_pedal_pos;
+		return FnReturn_Ok;
 	}
+	return FnReturn_InvalidArgument;
 }
 
-void vehicleModel_setSteeringWheelAngle(vehicleModel_t *VehicleModel, float sw_angle)
+fnReturn_t vehicleModel_setSteeringWheelAngle(vehicleModel_t *VehicleModel, float sw_angle)
 {
 
 	if (sw_angle <= VehicleModel->maxSteeringWheelAngle && sw_angle >= -(VehicleModel->maxSteeringWheelAngle))
 	{
 		VehicleModel->swAngle = sw_angle;
+		return FnReturn_Ok;
 	}
+	return FnReturn_InvalidArgument;
 }
 
-void vehicleModel_setGear(vehicleModel_t *VehicleModel, vehicleGear_t gear)
+fnReturn_t vehicleModel_setGear(vehicleModel_t *VehicleModel, vehicleGear_t gear)
 {
 	if (gear == VehicleGear_Park || gear == VehicleGear_Reverse)
 	{
-		if(VehicleModel->velocity == 0.0) // valamilyen kicsi rangen belül kéne nézni?
+		if((VehicleModel->velocity) * 3.6 <= 3.0 && (VehicleModel->velocity) * 3.6 >= -3.0)
+		{
 			VehicleModel->gear = gear;
+			return FnReturn_Ok;
+		}
+		return FnReturn_InvalidArgument;
 	}
 	else
 	{
-		if (VehicleModel->velocity >= 0) // ez jó így?
-		{
-			VehicleModel->gear = gear;
-		}
-
-		//-3 és 3 között
+		VehicleModel->gear = gear;
+		return FnReturn_Ok;
 	}
 }
